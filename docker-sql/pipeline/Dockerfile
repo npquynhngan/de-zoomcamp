@@ -5,11 +5,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 
 WORKDIR /code
 
-#Add virtual environment path to PATH so we can use installed packages
+# Add virtual environment path to PATH so we can use installed packages
 ENV PATH="/code/.venv/bin:$PATH"
 
 COPY pyproject.toml .python-version uv.lock ./
-RUN uv sync --locked
+# Only install main dependencies
+RUN uv sync --locked 
 
 COPY pipeline.py .
 ENTRYPOINT ["python", "pipeline.py"]

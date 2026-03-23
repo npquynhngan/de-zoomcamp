@@ -1,0 +1,55 @@
+id: wildfire_pipeline
+namespace: de_zoomcamp
+
+description: |
+  End-to-end wildfire data pipeline.
+  1. Ingests raw data from Kaggle and uploads to GCS.
+  2. Loads Parquet files from GCS into a partitioned BigQuery table.
+  3. Runs dbt transformations (staging + mart models).
+  4. Runs dbt tests to validate data quality.
+
+tasks:
+  - id: ingest_to_gcs_and_bq
+    type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: wildfire-ingestion:latest
+    env:
+      GCP_PROJECT_ID: "{{ vars.gcp_project_id }}"
+      GCS_BUCKET_NAME: "{{ vars.gcs_bucket_name }}"
+      BQ_DATASET: "{{ vars.bq_dataset }}"
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
+      KAGGLE_USERNAME: "{{ vars.kaggle_username }}"
+      KAGGLE_KEY: "{{ vars.kaggle_key }}"
+    volumes:
+      - "{{ vars.gcp_key_path }}:/secrets/gcp-key.json:ro"
+
+  - id: dbt_run
+    type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: wildfire-dbt:latest
+    commands:
+      - dbt run --profiles-dir /dbt --project-dir /dbt
+    env:
+      GCP_PROJECT_ID: "{{ vars.gcp_project_id }}"
+      BQ_DATASET: "{{ vars.bq_dataset }}"
+      GCP_REGION: "{{ vars.gcp_region }}"
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
+    volumes:
+      - "{{ vars.gcp_key_path }}:/secrets/gcp-key.json:ro"
+
+  - id: dbt_test
+    type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: wildfire-dbt:latest
+    commands:
+      - dbt test --profiles-dir /dbt --project-dir /dbt
+    env:
+      GCP_PROJECT_ID: "{{ vars.gcp_project_id }}"
+      BQ_DATASET: "{{ vars.bq_dataset }}"
+      GCP_REGION: "{{ vars.gcp_region }}"
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
+    volumes:
+      - "{{ vars.gcp_key_path }}:/secrets/gcp-key.json:ro"
+
+triggers:
+  - id: schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 6 * * *"
+    disabled: true  # Enable for regular refreshes

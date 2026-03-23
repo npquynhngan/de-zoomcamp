@@ -1,192 +1,278 @@
-<p align="center">
-  <img width="100%" src="/images/architecture/arch_v5_workshops.png" alt="Data Engineering Zoomcamp Overview">
-</p>
+# US Wildfire Analytics Pipeline
 
-<h1 align="center">
-    <strong>Data Engineering Zoomcamp: A Free 9-Week Course on Data Engineering Fundamentals</strong>
-</h1>
+An end-to-end batch data engineering project that ingests 28 years of US wildfire occurrence data, loads it into a cloud data warehouse, transforms it with dbt, and surfaces insights through an interactive dashboard.
 
-<p align="center">
-Master the fundamentals of data engineering by building an end-to-end data pipeline from scratch. Gain hands-on experience with industry-standard tools and best practices.
-</p>
+## Problem Description
 
-<p align="center">
-<a href="https://airtable.com/shr6oVXeQvSI5HuWD"><img src="https://user-images.githubusercontent.com/875246/185755203-17945fd1-6b64-46f2-8377-1011dcb1a444.png" height="50" /></a>
-</p>
+Wildfires cause billions of dollars in damage every year across the United States, threatening lives, property, and ecosystems. Understanding where fires occur, when they peak, and what causes them is critical for emergency planners, insurance analysts, and environmental researchers.
 
-<p align="center">
-<a href="https://datatalks.club/slack.html">Join Slack</a> •
-<a href="https://app.slack.com/client/T01ATQK62F8/C01FABYF2RG">#course-data-engineering Channel</a> •
-<a href="https://t.me/dezoomcamp">Telegram Announcements</a> •
-<a href="https://www.youtube.com/playlist?list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb">Course Playlist</a> •
-<a href="https://datatalks.club/faq/data-engineering-zoomcamp.html">FAQ</a>
-</p>
+This project answers questions such as:
+- Which states experience the most fires, and what are the leading causes?
+- How has the frequency and severity of wildfires changed over nearly three decades?
+- What is the seasonal pattern of wildfire activity?
 
-## How to Enroll
+The pipeline ingests the [FPA FOD (Fire Program Analysis fire-occurrence database)](https://www.kaggle.com/datasets/capcloudcoder/us-wildfire-data-plus-other-attributes), a public dataset of ~2.3 million fire records from 1992 to 2020, maintained by the US Forest Service. Data is stored in Google Cloud Storage, loaded into BigQuery, transformed with dbt, and visualised in Looker Studio.
 
-### 2026 Cohort
-- **Start Date**: 12 January 2026
-- **Register Here**: [Sign up](https://airtable.com/shr6oVXeQvSI5HuWD)
+## Architecture
 
-### Self-Paced Learning
-All course materials are freely available for independent study. Follow these steps:
-1. Watch the course videos.
-2. Join the [Slack community](https://datatalks.club/slack.html).
-3. Refer to the [FAQ document](https://datatalks.club/faq/data-engineering-zoomcamp.html) for guidance.
+```
+[Kaggle CSV Dataset]
+       |
+       v
+[Python Ingestion Script (Docker)]
+  - Download from Kaggle API
+  - Convert CSV -> Parquet (chunked)
+  - Upload to GCS (data lake)
+       |
+       v
+[Google Cloud Storage]
+  gs://<bucket>/raw/wildfires/
+       |
+       v
+[BigQuery - raw_wildfires]
+  Partitioned by DISCOVERY_DATE (day)
+  Clustered by STATE, NWCG_GENERAL_CAUSE
+       |
+       v
+[dbt Transformations]
+  staging/stg_wildfires     - clean, rename, type-cast
+  marts/fct_wildfires       - enriched fact table
+  marts/agg_monthly_stats   - monthly fire counts/acreage
+  marts/agg_state_stats     - state x cause aggregates
+       |
+       v
+[Looker Studio Dashboard]
+  Tile 1: Fire count by cause (categorical bar chart)
+  Tile 2: Monthly fire trend 1992-2020 (temporal line chart)
 
-## Syllabus Overview
-The course consists of structured modules, hands-on workshops, and a final project to reinforce your learning.
+Infrastructure provisioned by Terraform. Pipeline orchestrated by Kestra.
+```
 
-### **Prerequisites**
-To get the most out of this course, you should have:
-- Basic coding experience
-- Familiarity with SQL
-- Experience with Python (helpful but not required)
+## Dashboard
 
-No prior data engineering experience is necessary.
+The Looker Studio dashboard is publicly accessible at:
 
-### **Modules**
+> **[View Dashboard](https://lookerstudio.google.com)** *(link updated after deployment)*
 
-#### [Module 1: Containerization and Infrastructure as Code](01-docker-terraform/)
-- Introduction to GCP
-- Docker and Docker Compose
-- Running PostgreSQL with Docker
-- Infrastructure setup with Terraform
-- Homework
+Screenshot previews:
 
-#### [Module 2: Workflow Orchestration](02-workflow-orchestration/)
-- Data Lakes and Workflow Orchestration
-- Workflow orchestration with Kestra
-- Homework
+| Categorical: Fire Count by Cause | Temporal: Monthly Fire Trend |
+|---|---|
+| ![Fires by cause](dashboard/screenshots/fires_by_cause.png) | ![Monthly trend](dashboard/screenshots/monthly_trend.png) |
 
-#### [Workshop 1: Data Ingestion](cohorts/2026/workshops/dlt.md)
-- API reading and pipeline scalability
-- Data normalization and incremental loading
-- Homework
+See [dashboard/README.md](dashboard/README.md) for instructions to recreate the dashboard.
 
-#### [Module 3: Data Warehousing](03-data-warehouse/)
-- Introduction to BigQuery
-- Partitioning, clustering, and best practices
-- Machine learning in BigQuery
+## Dataset
 
-#### [Module 4: Analytics Engineering](04-analytics-engineering/)
-- Analytics Engineering and Data Modeling
-- dbt (data build tool) with DuckDB & BigQuery
-- Testing, documentation, and deployment
+| Property | Value |
+|----------|-------|
+| Name | FPA FOD - US Wildfire Occurrences |
+| Source | US Forest Service via Kaggle |
+| Kaggle slug | `capcloudcoder/us-wildfire-data-plus-other-attributes` |
+| Records | ~2.3 million fires |
+| Time range | 1992 - 2020 |
+| Key fields | discovery date, containment date, fire size (acres), fire cause, state, county, lat/lon, size class (A-G) |
 
-#### [Module 5: Data Platforms](05-data-platforms/)
-- Building end-to-end data pipelines with Bruin
-- Data ingestion, transformation, and quality
-- Deployment to cloud (BigQuery)
+## Technologies Used
 
-#### [Module 6: Batch Processing](06-batch/)
-- Introduction to Apache Spark
-- DataFrames and SQL
-- Internals of GroupBy and Joins
+| Layer | Tool |
+|-------|------|
+| Cloud platform | Google Cloud Platform (GCS + BigQuery) |
+| Infrastructure as Code | Terraform |
+| Containerisation | Docker + Docker Compose |
+| Orchestration | Kestra |
+| Data ingestion | Python (pandas, pyarrow, google-cloud-storage) |
+| Transformations | dbt (dbt-bigquery) |
+| Dashboard | Looker Studio |
 
-#### [Module 7: Streaming](07-streaming/)
-- Introduction to Kafka
-- Kafka Streams and KSQL
-- Schema management with Avro
+## Prerequisites
 
-#### [Final Project](projects/)
-- Apply all concepts learned in a real-world scenario
-- Peer review and feedback process
+- [GCP account](https://cloud.google.com/) with billing enabled
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
+- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.6
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [Kaggle account](https://www.kaggle.com/) with an API key
 
-## Testimonials
-> Thank you for what you do! The Data Engineering Zoomcamp gave me skills that helped me land my first tech job.
-> 
-> — [Tim Claytor](https://www.linkedin.com/in/claytor/) ([Source](https://www.linkedin.com/feed/update/urn:li:activity:7396882073308938240?commentUrn=urn%3Ali%3Acomment%3A%28activity%3A7396882073308938240%2C7396889959711793152%29&dashCommentUrn=urn%3Ali%3Afsd_comment%3A%287396889959711793152%2Curn%3Ali%3Aactivity%3A7396882073308938240%29))
+## Setup Instructions
 
-> Three months might seem like a long time, but the growth and learning during this period are truly remarkable. It was a great experience with a lot of learning, connecting with like-minded people from all around the world, and having fun. I must admit, this was really hard. But the feeling of accomplishment and learning made it all worthwhile. And I would do it again!
->
-> — [Nevenka Lukic](https://www.linkedin.com/in/nevenka-lukic/) ([Source](https://www.linkedin.com/posts/nevenka-lukic_data-engineering-zoomcamp-final-project-activity-7181985646033461248-Lc1O?utm_source=share&utm_medium=member_desktop&rcm=ACoAADJu9vMBW6iyIYswCQnN6t8UJLkXH2tQPi4))
+### 1. Clone the repository
 
-> One of the significant things I inferred from the Zoomcamp is to prioritize fundamentals and principles over ever-evolving tools and tech stacks. Hugely grateful to Alexey Grigorev for putting together this incredible course and offering it for free.
->
-> — [Siddhartha Gogoi](https://www.linkedin.com/in/siddhartha-gogoi/) ([Source](https://www.linkedin.com/posts/activity-7325692407675604992-XSKI?utm_source=share&utm_medium=member_desktop&rcm=ACoAADJu9vMBW6iyIYswCQnN6t8UJLkXH2tQPi4))
+```bash
+git clone https://github.com/npquynhngan/de-zoomcamp.git
+cd de-zoomcamp/project
+```
 
-> Such a fun deep dive into data engineering, cloud automation, and orchestration. I learned so much along the way. Big shoutout to Alexey Grigorev and the DataTalksClub team for the opportunity and guidance throughout the 3 months of the free course.
->
-> — [Assitan NIARE](https://www.linkedin.com/in/assitan-niar%C3%A9-data/) ([Source](https://www.linkedin.com/posts/activity-7317441554023874561-E3wm?utm_source=share&utm_medium=member_desktop&rcm=ACoAADJu9vMBW6iyIYswCQnN6t8UJLkXH2tQPi4))
+### 2. Configure environment variables
 
-> If you’re serious about breaking into data engineering, start here. The repo’s structure, community, and hands-on focus make it unparalleled.
-> 
-> — [Wady Osama](https://www.linkedin.com/in/wadyosama/) ([Source](https://www.linkedin.com/posts/wadyosama_dataengineering-zoomcamp-dezoomcamp-activity-7292126824711520258-puJm?utm_source=share&utm_medium=member_desktop&rcm=ACoAADJu9vMBW6iyIYswCQnN6t8UJLkXH2tQPi4))
+```bash
+make setup          # copies .env.example to .env
+```
 
-## Community & Support
+Edit `.env` and fill in all values:
 
-### **Getting Help on Slack**
-Join the [`#course-data-engineering`](https://app.slack.com/client/T01ATQK62F8/C01FABYF2RG) channel on [DataTalks.Club Slack](https://datatalks.club/slack.html) for discussions, troubleshooting, and networking.
+```
+GCP_PROJECT_ID=your-gcp-project-id
+GCP_REGION=us-central1
+GCS_BUCKET_NAME=your-project-id-wildfire-data-lake
+BQ_DATASET=wildfire_data
+GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/gcp-key.json
+KAGGLE_USERNAME=your-kaggle-username
+KAGGLE_KEY=your-kaggle-api-key
+```
 
-To keep discussions organized:
-- Follow [our guidelines](asking-questions.md) when posting questions.
-- Review the [community guidelines](https://datatalks.club/slack/guidelines.html).
+### 3. Set up GCP service account
 
-## Meet the Instructors
+```bash
+# Create a service account
+gcloud iam service-accounts create wildfire-pipeline \
+  --description="Wildfire pipeline service account" \
+  --display-name="Wildfire Pipeline"
 
-- [Alexey Grigorev](https://linkedin.com/in/agrigorev)
-- [Michael Shoemaker](https://www.linkedin.com/in/michaelshoemaker1/)
-- [Will Russell](https://www.linkedin.com/in/wrussell1999/)
-- [Anna Geller](https://www.linkedin.com/in/anna-geller-12a86811a/)
-- [Juan Manuel Perafan](https://www.linkedin.com/in/jmperafan/)
-- [Arsalan Noorafkan](https://www.linkedin.com/in/arsalan0/)
+# Grant required roles
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+  --member="serviceAccount:wildfire-pipeline@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
 
-Past instructors:
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
+  --member="serviceAccount:wildfire-pipeline@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/bigquery.admin"
 
-- [Victoria Perez Mola](https://www.linkedin.com/in/victoriaperezmola/)
-- [Ankush Khanna](https://linkedin.com/in/ankushkhanna2)
-- [Sejal Vaidya](https://www.linkedin.com/in/vaidyasejal/)
-- [Irem Erturk](https://www.linkedin.com/in/iremerturk/)
-- [Luis Oliveira](https://www.linkedin.com/in/lgsoliveira/)
-- [Zach Wilson](https://www.linkedin.com/in/eczachly)
+# Download the JSON key
+gcloud iam service-accounts keys create ~/wildfire-gcp-key.json \
+  --iam-account wildfire-pipeline@$GCP_PROJECT_ID.iam.gserviceaccount.com
+```
 
-## Sponsors & Supporters
-A special thanks to our course sponsors for making this initiative possible!
+Set `GOOGLE_APPLICATION_CREDENTIALS=~/wildfire-gcp-key.json` in your `.env`.
 
-<p align="center">
-  <a href="https://kestra.io/">
-    <img height="120" src="images/kestra.svg">
-  </a>
-</p>
+### 4. Provision GCP infrastructure with Terraform
 
-<p align="center">
-  <a href="https://getbruin.com/">
-    <img height="110" src="images/bruin.svg">
-  </a>
-</p>
+Create `terraform/terraform.tfvars`:
 
+```hcl
+project_id      = "your-gcp-project-id"
+gcs_bucket_name = "your-project-id-wildfire-data-lake"
+bq_dataset      = "wildfire_data"
+region          = "us-central1"
+```
 
-<p align="center">
-  <a href="https://dlthub.com/">
-    <img height="90" src="images/dlthub.png">
-  </a>
-</p>
+Then run:
 
-Interested in supporting our community? Reach out to [alexey@datatalks.club](mailto:alexey@datatalks.club).
+```bash
+make tf-init
+make tf-apply
+```
 
-## About DataTalks.Club
+This provisions:
+- A GCS bucket for the data lake
+- A BigQuery dataset (`wildfire_data`)
 
-<p align="center">
-  <img width="40%" src="https://github.com/user-attachments/assets/1243a44a-84c8-458d-9439-aaf6f3a32d89" alt="DataTalks.Club">
-</p>
+### 5. Build Docker images
 
-<p align="center">
-<a href="https://datatalks.club/">DataTalks.Club</a> is a global online community of data enthusiasts. It's a place to discuss data, learn, share knowledge, ask and answer questions, and support each other.
-</p>
+```bash
+make build
+```
 
-<p align="center">
-<a href="https://datatalks.club/">Website</a> •
-<a href="https://datatalks.club/slack.html">Join Slack Community</a> •
-<a href="https://us19.campaign-archive.com/home/?u=0d7822ab98152f5afc118c176&id=97178021aa">Newsletter</a> •
-<a href="http://lu.ma/dtc-events">Upcoming Events</a> •
-<a href="https://www.youtube.com/@DataTalksClub/featured">YouTube</a> •
-<a href="https://github.com/DataTalksClub">GitHub</a> •
-<a href="https://www.linkedin.com/company/datatalks-club/">LinkedIn</a> •
-<a href="https://twitter.com/DataTalksClub">Twitter</a>
-</p>
+### 6. Run the ingestion pipeline
 
-All the activity at DataTalks.Club mainly happens on [Slack](https://datatalks.club/slack.html). We post updates there and discuss different aspects of data, career questions, and more.
+```bash
+make ingest
+```
 
-At DataTalksClub, we organize online events, community activities, and free courses. You can learn more about what we do at [DataTalksClub Community Navigation](https://www.notion.so/DataTalksClub-Community-Navigation-bf070ad27ba44bf6bbc9222082f0e5a8?pvs=21).
+This:
+1. Downloads the wildfire CSV from Kaggle
+2. Converts it to Parquet files in 100k-row chunks
+3. Uploads the Parquet files to GCS
+4. Loads them into a partitioned + clustered BigQuery table (`raw_wildfires`)
 
+Expected result: ~2.3 million rows in `wildfire_data.raw_wildfires`.
+
+### 7. Run dbt transformations
+
+```bash
+make dbt-run     # create staging + mart models
+make dbt-test    # run data quality tests
+```
+
+Or run everything in sequence:
+
+```bash
+make pipeline
+```
+
+### 8. View the dashboard
+
+1. Open [Looker Studio](https://lookerstudio.google.com)
+2. Create a new report and connect to BigQuery
+3. Select your project -> `wildfire_data` -> `agg_monthly_stats` (for temporal tile)
+4. Add a second data source: `agg_state_stats` (for categorical tile)
+5. See [dashboard/README.md](dashboard/README.md) for full step-by-step instructions
+
+### Optional: Orchestrate with Kestra
+
+```bash
+make kestra-up
+```
+
+Open `http://localhost:8080`, navigate to Flows, and trigger `wildfire_pipeline` manually or enable the daily schedule.
+
+## Project Structure
+
+```
+project/
+├── README.md                        # This file
+├── Makefile                         # Convenience targets
+├── .env.example                     # Environment variable template
+├── terraform/
+│   ├── main.tf                      # GCS bucket + BigQuery dataset
+│   ├── variables.tf
+│   └── outputs.tf
+├── docker/
+│   ├── docker-compose.yaml          # Ingestion + dbt services
+│   ├── ingestion/
+│   │   ├── Dockerfile
+│   │   ├── pyproject.toml
+│   │   └── ingest.py                # Kaggle -> GCS -> BigQuery pipeline
+│   └── dbt/
+│       └── Dockerfile
+├── kestra/
+│   ├── docker-compose.yaml          # Kestra server + worker
+│   └── flows/
+│       └── wildfire_pipeline.yaml   # Full orchestration flow
+├── dbt_wildfire/
+│   ├── dbt_project.yml
+│   ├── profiles.yml
+│   ├── models/
+│   │   ├── staging/
+│   │   │   ├── stg_wildfires.sql    # Clean + rename raw columns
+│   │   │   └── schema.yml
+│   │   └── marts/
+│   │       ├── fct_wildfires.sql    # Enriched fact table
+│   │       ├── agg_monthly_stats.sql
+│   │       ├── agg_state_stats.sql
+│   │       └── schema.yml
+│   └── macros/
+│       └── fire_size_class.sql      # Size class label macro
+└── dashboard/
+    ├── README.md                    # Dashboard recreation guide
+    └── screenshots/
+```
+
+## Estimated Cloud Costs
+
+All resources are within GCP free tier limits for this dataset size:
+
+| Resource | Free tier | Estimated usage |
+|----------|-----------|----------------|
+| BigQuery storage | 10 GB/month free | ~1 GB |
+| BigQuery queries | 1 TB/month free | < 10 GB |
+| GCS storage | 5 GB/month free | ~500 MB |
+
+Expected monthly cost: **$0** (within free tier).
+
+## Teardown
+
+To remove all GCP resources:
+
+```bash
+make tf-destroy
+```

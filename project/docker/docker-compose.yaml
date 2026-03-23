@@ -1,0 +1,27 @@
+services:
+  ingestion:
+    build:
+      context: ./ingestion
+      dockerfile: Dockerfile
+    image: wildfire-ingestion:latest
+    env_file:
+      - ../.env
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/gcp-key.json:ro
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
+
+  dbt:
+    build:
+      context: ..
+      dockerfile: docker/dbt/Dockerfile
+    image: wildfire-dbt:latest
+    env_file:
+      - ../.env
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/gcp-key.json:ro
+      - ../dbt_wildfire:/dbt
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
+    profiles:
+      - dbt

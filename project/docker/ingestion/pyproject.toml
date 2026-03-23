@@ -1,0 +1,15 @@
+[project]
+name = "wildfire-ingestion"
+version = "0.1.0"
+description = "Wildfire data ingestion pipeline — GCS and BigQuery"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.0",
+    "google-cloud-bigquery>=3.0.0",
+    "google-cloud-storage>=2.0.0",
+    "kaggle>=1.7.0",
+    "pandas>=3.0.0",
+    "pyarrow>=23.0.0",
+    "tqdm>=4.67.0",
+]

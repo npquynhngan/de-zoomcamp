@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: fct_wildfires
+    description: "Fact table — one enriched row per fire event (1992-2020). Partitioned by discovery_date, clustered by state and cause."
+    columns:
+      - name: fire_id
+        description: "Global unique fire ID"
+        tests:
+          - not_null
+          - unique
+      - name: discovery_date
+        description: "Date the fire was discovered"
+        tests:
+          - not_null
+      - name: state
+        description: "Two-letter state abbreviation"
+        tests:
+          - not_null
+      - name: fire_size_acres
+        description: "Estimated final fire size in acres"
+        tests:
+          - not_null
+      - name: fire_size_class
+        description: "National fire size classification A-G"
+        tests:
+          - accepted_values:
+              values: ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+  - name: agg_monthly_stats
+    description: "Monthly fire statistics aggregated by year, month, and state. Used for temporal dashboard tile."
+    columns:
+      - name: fire_year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: fire_month
+        description: "Calendar month (1-12)"
+        tests:
+          - not_null
+      - name: year_month
+        description: "YYYY-MM formatted period"
+        tests:
+          - not_null
+      - name: fire_count
+        description: "Number of fires in this period/state"
+        tests:
+          - not_null
+
+  - name: agg_state_stats
+    description: "Fire statistics aggregated by state and cause. Used for categorical dashboard tile."
+    columns:
+      - name: state
+        description: "Two-letter state abbreviation"
+        tests:
+          - not_null
+      - name: cause
+        description: "General fire cause description"
+        tests:
+          - not_null
+      - name: fire_count
+        description: "Total number of fires for this state/cause combination"
+        tests:
+          - not_null

@@ -17,8 +17,7 @@ tasks:
       GCS_BUCKET_NAME: "{{ vars.gcs_bucket_name }}"
       BQ_DATASET: "{{ vars.bq_dataset }}"
       GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcp-key.json
-      KAGGLE_USERNAME: "{{ vars.kaggle_username }}"
-      KAGGLE_KEY: "{{ vars.kaggle_key }}"
+      KAGGLE_API_TOKEN: "{{ vars.kaggle_api_token }}"
     volumes:
       - "{{ vars.gcp_key_path }}:/secrets/gcp-key.json:ro"
 

@@ -90,6 +90,10 @@ def csv_to_parquet(csv_path: Path, parquet_dir: Path) -> list[Path]:
     )
 
     for i, chunk in enumerate(tqdm(df_iter, desc="Converting to Parquet")):
+        # Drop unnamed index columns leaked from prior CSV exports
+        unnamed_cols = [c for c in chunk.columns if c.startswith("Unnamed:")]
+        if unnamed_cols:
+            chunk = chunk.drop(columns=unnamed_cols)
         out_path = parquet_dir / f"part_{i:05d}.parquet"
         chunk.to_parquet(out_path, index=False, engine="pyarrow")
         parquet_files.append(out_path)

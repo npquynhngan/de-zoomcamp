@@ -1,6 +1,6 @@
 -- Fact table: one row per fire event, enriched with date parts.
 -- Partitioned by discovery_date, clustered by state and cause.
--- {{ config(...) }} sets BigQuery-specific options.
+{# config() below sets BigQuery-specific options #}
 
 {{
     config(

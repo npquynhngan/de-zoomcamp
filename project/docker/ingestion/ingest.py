@@ -139,7 +139,7 @@ def create_bq_table(
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         autodetect=True,
         time_partitioning=bigquery.TimePartitioning(
-            type_=bigquery.TimePartitioningType.DAY,
+            type_=bigquery.TimePartitioningType.MONTH,
             field="disc_clean_date",
         ),
         clustering_fields=["state", "stat_cause_descr"],

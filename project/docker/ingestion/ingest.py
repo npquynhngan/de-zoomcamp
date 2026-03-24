@@ -28,7 +28,7 @@ DTYPE = {
     "discovery_month": "string",
     "putout_time": "string",
     "disc_pre_year": "Int64",
-    "disc_pre_month": "Int64",
+    "disc_pre_month": "string",
     "wstation_usaf": "string",
     "dstation_m": "float64",
     "wstation_wban": "string",

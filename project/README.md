@@ -4,32 +4,42 @@ An end-to-end data engineering pipeline that ingests the US wildfire dataset fro
 
 ## Architecture
 
-```
-Kaggle Dataset
-      │
-      ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐
-│  Ingestion  │────▶│  GCS Bucket │────▶│  BigQuery           │
-│  (Python)   │     │  (Parquet)  │     │  raw_wildfires      │
-└─────────────┘     └─────────────┘     └──────────┬──────────┘
-                                                   │
-                                                   ▼
-                                        ┌─────────────────────┐
-                                        │     dbt             │
-                                        │  stg_wildfires      │
-                                        │  fct_wildfires      │
-                                        │  agg_monthly_stats  │
-                                        │  agg_state_stats    │
-                                        └──────────┬──────────┘
-                                                   │
-                                                   ▼
-                                        ┌─────────────────────┐
-                                        │   Looker Studio     │
-                                        │    Dashboard        │
-                                        └─────────────────────┘
+```mermaid
+flowchart LR
+    kaggle([Kaggle Dataset])
 
-Orchestration: Kestra (scheduled daily at 06:00 UTC)
-Infrastructure: Terraform (GCS + BigQuery)
+    subgraph ingest["Ingestion (Docker · Python 3.13)"]
+        py[ingest.py]
+    end
+
+    subgraph lake["Data Lake (GCS)"]
+        gcs[Parquet files]
+    end
+
+    subgraph warehouse["Data Warehouse (BigQuery)"]
+        raw[(raw_wildfires)]
+    end
+
+    subgraph transform["Transformation (dbt)"]
+        stg[stg_wildfires\nview]
+        fct[fct_wildfires\ntable · partitioned + clustered]
+        m1[agg_monthly_stats\ntable]
+        m2[agg_state_stats\ntable]
+        stg --> fct
+        stg --> m1
+        stg --> m2
+    end
+
+    dash[("Looker Studio\nDashboard")]
+
+    kaggle --> py --> gcs --> raw --> stg
+    fct & m1 & m2 --> dash
+
+    kestra(["Kestra\nScheduled: 06:00 UTC daily"])
+    tf(["Terraform\nGCS · BigQuery"])
+
+    style kestra fill:#f5f0ff,stroke:#7c4dff
+    style tf   fill:#e8f5e9,stroke:#388e3c
 ```
 
 ## Technology Stack
@@ -88,7 +98,7 @@ project/
 - A GCP project with a service account key that has roles:
   - `Storage Admin`
   - `BigQuery Admin`
-- A [Kaggle API token](https://www.kaggle.com/settings/account) (`kaggle.json`)
+- A [Kaggle API token](https://www.kaggle.com/settings/account) (`KAGGLE_USERNAME` + `KAGGLE_API_TOKEN` — set in `.env`)
 
 ## Setup
 

@@ -6,26 +6,21 @@ sources:
     schema: "{{ env_var('BQ_DATASET', 'wildfire_data') }}"
     tables:
       - name: raw_wildfires
-        description: "Raw wildfire occurrence data from the FPA FOD dataset (1992-2020)"
+        description: "Raw wildfire data from the FW_Veg_Rem_Combined dataset (US wildfires with weather and vegetation attributes)"
         columns:
-          - name: FOD_ID
-            description: "Global unique fire ID"
+          - name: disc_clean_date
+            description: "Discovery date (cleaned)"
             tests:
               - not_null
-              - unique
-          - name: DISCOVERY_DATE
-            description: "Date the fire was discovered"
-            tests:
-              - not_null
-          - name: STATE
+          - name: state
             description: "Two-letter state abbreviation"
             tests:
               - not_null
-          - name: FIRE_SIZE
+          - name: fire_size
             description: "Fire size in acres"
             tests:
               - not_null
-          - name: FIRE_SIZE_CLASS
+          - name: fire_size_class
             description: "National fire size classification (A through G)"
             tests:
               - accepted_values:
@@ -36,7 +31,7 @@ models:
     description: "Cleaned and typed wildfire records with standardised column names"
     columns:
       - name: fire_id
-        description: "Global unique fire ID (from FOD_ID)"
+        description: "Surrogate row-number ID"
         tests:
           - not_null
           - unique

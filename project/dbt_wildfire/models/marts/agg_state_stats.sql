@@ -11,7 +11,6 @@ with fires as (
 select
     state,
     cause,
-    cause_classification,
 
     count(*)                                as fire_count,
     round(sum(fire_size_acres), 2)          as total_acres_burned,
@@ -25,5 +24,5 @@ select
     countif(fire_size_class in ('D','E','F','G')) as class_large_count
 
 from fires
-group by 1, 2, 3
+group by 1, 2
 order by fire_count desc

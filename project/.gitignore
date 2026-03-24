@@ -17,3 +17,4 @@ serving_dir
 *.parquet
 *.csv
 *.duckdb
+secrets/

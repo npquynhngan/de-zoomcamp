@@ -17,7 +17,7 @@ renamed as (
         -- Temporal
         cast(disc_clean_date as date)            as discovery_date,
         cast(disc_pre_year as int64)             as fire_year,
-        cast(discovery_month as int64)           as discovery_month,
+        discovery_month,
         cast(cont_clean_date as date)            as containment_date,
         cast(putout_time as float64)             as putout_time_hours,
 

@@ -25,7 +25,7 @@ DTYPE = {
     "latitude": "float64",
     "longitude": "float64",
     "state": "string",
-    "discovery_month": "Int64",
+    "discovery_month": "string",
     "putout_time": "float64",
     "disc_pre_year": "Int64",
     "disc_pre_month": "Int64",

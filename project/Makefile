@@ -36,11 +36,11 @@ ingest:
 
 dbt-run:
 	docker compose -f docker/docker-compose.yaml run --rm dbt \
-	  dbt run --profiles-dir /dbt --project-dir /dbt
+	  run --profiles-dir /dbt --project-dir /dbt
 
 dbt-test:
 	docker compose -f docker/docker-compose.yaml run --rm dbt \
-	  dbt test --profiles-dir /dbt --project-dir /dbt
+	  test --profiles-dir /dbt --project-dir /dbt
 
 pipeline: ingest dbt-run dbt-test
 	@echo "Pipeline complete."

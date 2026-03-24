@@ -16,46 +16,47 @@ import pandas as pd
 from google.cloud import bigquery, storage
 from tqdm import tqdm
 
-# Column dtypes for the FPA FOD wildfire dataset
+# Column dtypes for the FW_Veg_Rem_Combined wildfire dataset
 DTYPE = {
-    "FOD_ID": "Int64",
-    "FPA_ID": "string",
-    "SOURCE_SYSTEM_TYPE": "string",
-    "SOURCE_SYSTEM": "string",
-    "NWCG_REPORTING_AGENCY": "string",
-    "NWCG_REPORTING_UNIT_ID": "string",
-    "NWCG_REPORTING_UNIT_NAME": "string",
-    "SOURCE_REPORTING_UNIT": "string",
-    "SOURCE_REPORTING_UNIT_NAME": "string",
-    "LOCAL_FIRE_REPORT_ID": "string",
-    "LOCAL_INCIDENT_ID": "string",
-    "FIRE_CODE": "string",
-    "FIRE_NAME": "string",
-    "ICS_209_PLUS_INCIDENT_JOIN_ID": "string",
-    "ICS_209_PLUS_COMPLEX_JOIN_ID": "string",
-    "MTBS_ID": "string",
-    "MTBS_FIRE_NAME": "string",
-    "COMPLEX_NAME": "string",
-    "FIRE_YEAR": "Int64",
-    "DISCOVERY_DOY": "Int64",
-    "DISCOVERY_TIME": "string",
-    "NWCG_CAUSE_CLASSIFICATION": "string",
-    "NWCG_GENERAL_CAUSE": "string",
-    "NWCG_CAUSE_AGE_CATEGORY": "string",
-    "CONT_DOY": "Int64",
-    "CONT_TIME": "string",
-    "FIRE_SIZE": "float64",
-    "FIRE_SIZE_CLASS": "string",
-    "LATITUDE": "float64",
-    "LONGITUDE": "float64",
-    "OWNER_DESCR": "string",
-    "STATE": "string",
-    "COUNTY": "string",
-    "FIPS_CODE": "string",
-    "FIPS_NAME": "string",
+    "fire_name": "string",
+    "fire_size": "float64",
+    "fire_size_class": "string",
+    "stat_cause_descr": "string",
+    "latitude": "float64",
+    "longitude": "float64",
+    "state": "string",
+    "discovery_month": "Int64",
+    "putout_time": "float64",
+    "disc_pre_year": "Int64",
+    "disc_pre_month": "Int64",
+    "wstation_usaf": "string",
+    "dstation_m": "float64",
+    "wstation_wban": "string",
+    "wstation_byear": "Int64",
+    "wstation_eyear": "Int64",
+    "Vegetation": "string",
+    "fire_mag": "float64",
+    "weather_file": "string",
+    "Temp_pre_30": "float64",
+    "Temp_pre_15": "float64",
+    "Temp_pre_7": "float64",
+    "Temp_cont": "float64",
+    "Wind_pre_30": "float64",
+    "Wind_pre_15": "float64",
+    "Wind_pre_7": "float64",
+    "Wind_cont": "float64",
+    "Hum_pre_30": "float64",
+    "Hum_pre_15": "float64",
+    "Hum_pre_7": "float64",
+    "Hum_cont": "float64",
+    "Prec_pre_30": "float64",
+    "Prec_pre_15": "float64",
+    "Prec_pre_7": "float64",
+    "Prec_cont": "float64",
+    "remoteness": "float64",
 }
 
-PARSE_DATES = ["DISCOVERY_DATE", "CONT_DATE"]
+PARSE_DATES = ["disc_clean_date", "cont_clean_date", "disc_date_final", "cont_date_final", "disc_date_pre"]
 
 CHUNK_SIZE = 100_000
 
@@ -135,9 +136,9 @@ def create_bq_table(
         autodetect=True,
         time_partitioning=bigquery.TimePartitioning(
             type_=bigquery.TimePartitioningType.DAY,
-            field="DISCOVERY_DATE",
+            field="disc_clean_date",
         ),
-        clustering_fields=["STATE", "NWCG_GENERAL_CAUSE"],
+        clustering_fields=["state", "stat_cause_descr"],
     )
 
     gcs_uri = f"gs://{bucket_name}/{gcs_prefix}/*.parquet"
@@ -147,8 +148,8 @@ def create_bq_table(
 
     table = client.get_table(full_table_id)
     print(f"Loaded {table.num_rows:,} rows into {full_table_id}")
-    print(f"  Partitioned by: DISCOVERY_DATE (DAY)")
-    print(f"  Clustered by: STATE, NWCG_GENERAL_CAUSE")
+    print(f"  Partitioned by: disc_clean_date (DAY)")
+    print(f"  Clustered by: state, stat_cause_descr")
 
 
 @click.command()

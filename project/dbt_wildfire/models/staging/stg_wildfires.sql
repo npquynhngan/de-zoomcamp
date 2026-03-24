@@ -4,46 +4,58 @@
 with source as (
     select *
     from {{ source('wildfire_raw', 'raw_wildfires') }}
-    where DISCOVERY_DATE is not null
+    where disc_clean_date is not null
 ),
 
 renamed as (
     select
-        -- Identifiers
-        cast(FOD_ID as int64)               as fire_id,
-        FPA_ID                               as fpa_id,
-        FIRE_NAME                            as fire_name,
-        FIRE_CODE                            as fire_code,
+        -- Generate a surrogate key (row number) since this dataset has no unique ID
+        row_number() over (order by disc_clean_date, state, fire_name) as fire_id,
+
+        fire_name,
 
         -- Temporal
-        cast(DISCOVERY_DATE as date)         as discovery_date,
-        cast(FIRE_YEAR as int64)             as fire_year,
-        cast(DISCOVERY_DOY as int64)         as discovery_day_of_year,
-        cast(CONT_DATE as date)              as containment_date,
+        cast(disc_clean_date as date)            as discovery_date,
+        cast(disc_pre_year as int64)             as fire_year,
+        cast(discovery_month as int64)           as discovery_month,
+        cast(cont_clean_date as date)            as containment_date,
+        cast(putout_time as float64)             as putout_time_hours,
 
         -- Geography
-        STATE                                as state,
-        COUNTY                               as county,
-        FIPS_CODE                            as fips_code,
-        FIPS_NAME                            as fips_name,
-        cast(LATITUDE as float64)            as latitude,
-        cast(LONGITUDE as float64)           as longitude,
+        state,
+        cast(latitude as float64)                as latitude,
+        cast(longitude as float64)               as longitude,
 
         -- Fire characteristics
-        cast(FIRE_SIZE as float64)           as fire_size_acres,
-        FIRE_SIZE_CLASS                      as fire_size_class,
-        NWCG_CAUSE_CLASSIFICATION            as cause_classification,
-        NWCG_GENERAL_CAUSE                   as cause,
-        OWNER_DESCR                          as owner_description,
+        cast(fire_size as float64)               as fire_size_acres,
+        fire_size_class,
+        stat_cause_descr                         as cause,
+        Vegetation                               as vegetation,
+        cast(fire_mag as float64)                as fire_magnitude,
+        cast(remoteness as float64)              as remoteness,
 
-        -- Reporting
-        NWCG_REPORTING_AGENCY               as reporting_agency,
-        NWCG_REPORTING_UNIT_NAME            as reporting_unit,
+        -- Weather conditions (pre-fire and at containment)
+        cast(Temp_pre_30 as float64)             as temp_pre_30,
+        cast(Temp_pre_15 as float64)             as temp_pre_15,
+        cast(Temp_pre_7 as float64)              as temp_pre_7,
+        cast(Temp_cont as float64)               as temp_cont,
+        cast(Wind_pre_30 as float64)             as wind_pre_30,
+        cast(Wind_pre_15 as float64)             as wind_pre_15,
+        cast(Wind_pre_7 as float64)              as wind_pre_7,
+        cast(Wind_cont as float64)               as wind_cont,
+        cast(Hum_pre_30 as float64)              as humidity_pre_30,
+        cast(Hum_pre_15 as float64)              as humidity_pre_15,
+        cast(Hum_pre_7 as float64)               as humidity_pre_7,
+        cast(Hum_cont as float64)                as humidity_cont,
+        cast(Prec_pre_30 as float64)             as precip_pre_30,
+        cast(Prec_pre_15 as float64)             as precip_pre_15,
+        cast(Prec_pre_7 as float64)              as precip_pre_7,
+        cast(Prec_cont as float64)               as precip_cont,
 
         -- Computed
         date_diff(
-            cast(CONT_DATE as date),
-            cast(DISCOVERY_DATE as date),
+            cast(cont_clean_date as date),
+            cast(disc_clean_date as date),
             day
         ) as fire_duration_days
 

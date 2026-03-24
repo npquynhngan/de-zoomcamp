@@ -20,7 +20,6 @@ with base as (
 
 select
     fire_id,
-    fpa_id,
     fire_name,
 
     -- Date dimensions
@@ -35,9 +34,6 @@ select
 
     -- Geography
     state,
-    county,
-    fips_code,
-    fips_name,
     latitude,
     longitude,
 
@@ -45,9 +41,15 @@ select
     fire_size_acres,
     fire_size_class,
     {{ size_class_label('fire_size_class') }}   as fire_size_label,
-    cause_classification,
     cause,
-    owner_description,
-    reporting_agency
+    vegetation,
+    fire_magnitude,
+    remoteness,
+
+    -- Weather at containment
+    temp_cont,
+    wind_cont,
+    humidity_cont,
+    precip_cont
 
 from base

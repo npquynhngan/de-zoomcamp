@@ -2,10 +2,10 @@ version: 2
 
 models:
   - name: fct_wildfires
-    description: "Fact table — one enriched row per fire event (1992-2020). Partitioned by discovery_date, clustered by state and cause."
+    description: "Fact table — one enriched row per fire event. Partitioned by discovery_date, clustered by state and cause."
     columns:
       - name: fire_id
-        description: "Global unique fire ID"
+        description: "Surrogate row-number ID"
         tests:
           - not_null
           - unique

@@ -8,7 +8,7 @@ WORKDIR /code
 # Add virtual environment path to PATH so we can use installed packages
 ENV PATH="/code/.venv/bin:$PATH"
 
-COPY pyproject.toml .python-version ./
+COPY pyproject.toml .python-version uv.lock ./
 RUN uv sync --locked
 
 COPY ingest.py .

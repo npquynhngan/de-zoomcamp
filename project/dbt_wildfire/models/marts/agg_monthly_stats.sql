@@ -11,7 +11,7 @@ with fires as (
 select
     fire_year,
     extract(month from discovery_date)      as fire_month,
-    format_date('%Y-%m', discovery_date)    as year_month,
+    date_trunc(discovery_date, month)        as year_month,
     state,
 
     count(*)                                as fire_count,

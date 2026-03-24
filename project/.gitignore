@@ -18,3 +18,4 @@ serving_dir
 *.csv
 *.duckdb
 secrets/
+gcp-key.json

@@ -1,5 +1,9 @@
 *.parquet
 
+# Secrets / credentials
+secrets/
+*.json.key
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
